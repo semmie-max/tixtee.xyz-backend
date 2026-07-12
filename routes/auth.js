@@ -25,8 +25,6 @@ function issueToken(res, user) {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
-
-// SIGNUP — email + password
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
