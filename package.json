@@ -16,6 +16,7 @@
     "google-auth-library": "^9.11.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.2.0",
-    "mysql2": "^3.10.0"
+    "mysql2": "^3.10.0",
+    "resend": "^6.17.2"
   }
 }
