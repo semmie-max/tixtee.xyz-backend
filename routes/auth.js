@@ -77,8 +77,6 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Login failed' });
   }
 });
-
-// GOOGLE SIGN-IN — verifies the ID token sent from the frontend button
 router.post('/google', async (req, res) => {
   try {
     const { credential } = req.body;
