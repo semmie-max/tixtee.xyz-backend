@@ -8,11 +8,13 @@ const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const uploadRoutes = require('./routes/upload');
 const chatRoutes = require('./routes/chat');
+const broadcastRoutes = require('./routes/broadcast');
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://127.0.0.1:5500',
+  origin: process.env.CLIENT_ORIGIN || 'https://semmie-max.github.io',
   credentials: true
 }));
 app.use(express.json());

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const pool = require('../config/db');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -20,8 +20,8 @@ function issueToken(res, user) {
   );
   res.cookie('token', token, {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
+    secure: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
@@ -111,6 +111,19 @@ router.post('/google', async (req, res) => {
 // WHO AM I — frontend calls this to decide dashboard vs pending page
 router.get('/me', requireAuth, async (req, res) => {
   res.json({ email: req.user.email, isAdmin: req.user.isAdmin });
+});
+
+// ADMIN ONLY — list every account that has signed up
+router.get('/users', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, name, email, is_admin, auth_provider, created_at FROM users ORDER BY created_at DESC'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load users' });
+  }
 });
 
 // LOGOUT
