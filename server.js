@@ -9,6 +9,7 @@ const eventRoutes = require('./routes/events');
 const uploadRoutes = require('./routes/upload');
 const chatRoutes = require('./routes/chat');
 const broadcastRoutes = require('./routes/broadcast');
+app.use('/api/broadcast', broadcastRoutes);
 
 const app = express();
 app.set('trust proxy', 1);
