@@ -7,7 +7,6 @@ const { Resend } = require('resend');
 const pool = require('../config/db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
