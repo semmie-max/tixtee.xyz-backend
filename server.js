@@ -26,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/broadcast', broadcastRoutes);
 
 app.get('/', (req, res) => res.send('Tixtee/OpenMic backend is running'));
 
