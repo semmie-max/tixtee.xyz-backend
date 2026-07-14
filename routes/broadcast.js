@@ -31,7 +31,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     const results = await Promise.allSettled(
       emails.map(email =>
         resend.emails.send({
-          from: 'Tixtee <onboarding@resend.dev>',
+          from: 'Tixtee <noreply@mail.tixtee.xyz>',
           to: email,
           subject,
           html: message,

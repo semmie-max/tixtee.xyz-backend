@@ -229,7 +229,7 @@ router.post('/forgot-password', async (req, res) => {
     await pool.query('INSERT INTO password_resets (user_id, code, expires_at) VALUES (?,?,?)', [user.id, code, expiresAt]);
 
     await resend.emails.send({
-      from: 'Tixtee <onboarding@resend.dev>',
+      from: 'Tixtee <noreply@mail.tixtee.xyz>',
       to: email,
       subject: 'Your Tixtee password reset code',
       html: `<p>Hi ${user.name || ''},</p><p>Your password reset code is:</p><h2 style="letter-spacing:4px;">${code}</h2><p>This code expires in 15 minutes. If you didn't request this, you can ignore this email.</p>`,
