@@ -9,19 +9,17 @@ const eventRoutes = require('./routes/events');
 const uploadRoutes = require('./routes/upload');
 const chatRoutes = require('./routes/chat');
 const broadcastRoutes = require('./routes/broadcast');
-app.use('/api/broadcast', broadcastRoutes);
 
 const app = express();
 app.set('trust proxy', 1);
 
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'https://semmie-max.github.io',
+  origin: process.env.CLIENT_ORIGIN || 'https://tixtee.xyz',
   credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
 
-// serve uploaded images so the frontend can display them
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', authRoutes);
