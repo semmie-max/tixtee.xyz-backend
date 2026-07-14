@@ -29,15 +29,21 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     }
 
     const results = await Promise.allSettled(
-      emails.map(email =>
-        resend.emails.send({
-          from: 'Tixtee <noreply@mail.tixtee.xyz>',
-          to: email,
-          subject,
-          html: message,
-        })
-      )
-    );
+  emails.map(email =>
+    resend.emails.send({
+      from: 'Tixtee <noreply@mail.tixtee.xyz>',
+      to: email,
+      subject,
+      template: {
+        id: 'welcome-email',
+        variables: {
+          SUBJECT_HEADING: subject,
+          MESSAGE_BODY: message,
+        },
+      },
+    })
+  )
+);
 
     const sent = results.filter(r => r.status === 'fulfilled').length;
     const failed = results.length - sent;
