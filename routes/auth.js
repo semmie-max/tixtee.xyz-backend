@@ -14,7 +14,11 @@ const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function isAdminEmail(email) {
-  return email.toLowerCase() === (process.env.ADMIN_EMAIL || '').toLowerCase();
+  const admins = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map(e => e.trim().toLowerCase());
+
+  return admins.includes(email.toLowerCase());
 }
 
 function issueToken(res, user) {
