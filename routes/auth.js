@@ -27,6 +27,7 @@ function issueToken(res, user) {
     httpOnly: true,
     sameSite: 'lax',
     secure: true,
+    domain: '.tixtee.xyz',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
