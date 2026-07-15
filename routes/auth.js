@@ -143,8 +143,132 @@ router.post('/forgot-password', async (req, res) => {
     await resend.emails.send({
       from: 'Tixtee <noreply@mail.tixtee.xyz>',
       to: email,
-      subject: 'Your Tixtee password reset code',
-      html: `<p>Hi ${user.name || ''},</p><p>Your password reset code is:</p><h2 style="letter-spacing:4px;">${code}</h2><p>This code expires in 15 minutes. If you didn't request this, you can ignore this email.</p>`,
+      subject: 'Your  password reset code',
+      html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset Your Password</title>
+    <style>
+      /* Global client-specific resets */
+      body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+      table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+      img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+      table { border-collapse: collapse !important; }
+      body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #121212; }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 40px 0; background-color: #121212;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
+      <tr>
+        <td align="center">
+          <table
+            border="0"
+            cellpadding="0"
+            cellspacing="0"
+            width="100%"
+            style="max-width: 500px; background-color: #ffffff; border-radius: 40px 40px 0 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+          >
+            
+
+            <tr>
+              <td align="center" style="padding: 10px 30px 20px 30px;">
+                <h1 style="font-size: 32px; font-weight: 700; color: #000000; margin: 0; letter-spacing: -0.5px;">
+                  Let's get you back inside
+                </h1>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding: 0 40px;">
+                <div style="border-top: 1px solid #e0e0e0; height: 1px; width: 100%;"></div>
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                align="center"
+                style="padding: 40px 40px 30px 40px; font-size: 15px; line-height: 1.6; color: #333333;"
+              >
+                <p style="margin: 0 0 20px 0; font-weight: 500;">Hi {{name}},</p>
+
+                <p style="margin: 0 0 10px 0;">Your password reset code is:</p>
+
+                <div
+                  style="display: inline-block; background-color: #f4f4f5; padding: 12px 24px; border-radius: 8px; margin: 10px 0 25px 0;"
+                >
+                  <span
+                    style="font-family: 'Courier New', Courier, monospace; font-size: 20px; font-weight: 700; color: #111111; letter-spacing: 2px;"
+                  >
+                    ${code}
+                  </span>
+                </div>
+
+                <p style="margin: 0 0 30px 0; font-size: 14px; color: #666666;">
+                  this code resets in 15mins
+                </p>
+
+            <tr>
+              <td align="center" style="background-color: #000; padding: 40px 30px; border-radius: 0 0 0 0;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                  <tr>
+                    <td align="center" style="padding-bottom: 25px;">
+                      <span
+                        style="font-family: 'Brush Script MT', 'Dancing Script', cursive, sans-serif; font-size: 38px; color: #ffffff; letter-spacing: 1px;"
+                      >
+                        #smartticketing.
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td align="center" style="padding-bottom: 30px;">
+                      <a
+                        href="https://x.com/your_handle"
+                        target="_blank"
+                        style="display: inline-block; text-decoration: none;"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          width="22"
+                          height="22"
+                          fill="#ffffff"
+                          style="display: block;"
+                        >
+                          <path
+                            d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+                          />
+                        </svg>
+                      </a>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td align="center">
+                      <table border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="padding: 0 10px;">
+                            <a
+                              href="mailto:tixteedotxyz@gmail.com"
+                              style="color: #ffffff; font-size: 12px; font-weight: 500; text-decoration: underline; opacity: 0.9;"
+                              >Contact Us</a
+                            >
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
     });
 
     res.json({ message: 'If that email has an account, a code has been sent.' });
