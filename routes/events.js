@@ -53,9 +53,9 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       `INSERT INTO events
        (creator_id, title, description, event_date, start_time, end_time, venue, capacity, price,
         image_url, has_groupchat, category, event_format, is_virtual, virtual_link, is_recurring,
-        recurrence_pattern, social_instagram, social_twitter, social_tiktok, custom_url,
+        recurrence_pattern, social_instagram, social_twitter, social_tiktok, custom_url,latitude,longitude,
         groupchat_name, groupchat_rules, has_secret_guest, secret_guest_note, has_golden_seat, golden_seat_note)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         req.user.id, title, description, event_date, start_time, end_time, venue, capacity, price,
         image_url, !!has_groupchat, category || 'Corporate event', event_format, !!is_virtual, virtual_link,
