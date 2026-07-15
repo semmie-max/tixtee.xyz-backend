@@ -61,7 +61,6 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// LOGIN — email + password
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -111,12 +110,10 @@ router.post('/google', async (req, res) => {
   }
 });
 
-// WHO AM I — frontend calls this to decide dashboard vs pending page
 router.get('/me', requireAuth, async (req, res) => {
   res.json({ email: req.user.email, isAdmin: req.user.isAdmin });
 });
 
-// ADMIN ONLY — list every account that has signed up
 router.get('/users', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -127,20 +124,19 @@ router.get('/users', requireAuth, requireAdmin, async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Could not load users' });
   }
-});// STEP 1 — request a reset code by email
+});
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     const [rows] = await pool.query('SELECT id, name FROM users WHERE email = ?', [email]);
 
-    // Always respond the same way, whether or not the email exists — avoids leaking who has an account
     if (!rows.length) {
       return res.json({ message: 'If that email has an account, a code has been sent.' });
     }
 
     const user = rows[0];
     const code = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await pool.query('INSERT INTO password_resets (user_id, code, expires_at) VALUES (?,?,?)', [user.id, code, expiresAt]);
 
@@ -180,7 +176,6 @@ router.post('/verify-reset-code', async (req, res) => {
   }
 });
 
-// STEP 3 — set the new password using the reset token
 router.post('/reset-password', async (req, res) => {
   try {
     const { resetToken, newPassword } = req.body;
@@ -212,7 +207,6 @@ router.post('/reset-password', async (req, res) => {
 
 
 
-// LOGOUT
 router.post('/logout', (req, res) => {
   res.clearCookie('token');
   res.json({ message: 'Logged out' });

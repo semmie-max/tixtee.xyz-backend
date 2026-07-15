@@ -39,6 +39,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         variables: {
           SUBJECT_HEADING: subject,
           MESSAGE_BODY: message,
+          RECIPIENT_EMAIL: email,
         },
       },
     })
