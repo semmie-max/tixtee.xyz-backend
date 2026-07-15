@@ -191,9 +191,9 @@ router.post('/forgot-password', async (req, res) => {
                 align="center"
                 style="padding: 40px 40px 30px 40px; font-size: 15px; line-height: 1.6; color: #333333;"
               >
-                <p style="margin: 0 0 20px 0; font-weight: 500;">Hi {{name}},</p>
+                <p style="margin: 0 0 20px 0; font-weight: 500;">Hi there,</p>
 
-                <p style="margin: 0 0 10px 0;">Your password reset code is:</p>
+                <p style="margin: 0 0 10px 0;">Your password reset key is:</p>
 
                 <div
                   style="display: inline-block; background-color: #f4f4f5; padding: 12px 24px; border-radius: 8px; margin: 10px 0 25px 0;"
@@ -271,7 +271,7 @@ router.post('/forgot-password', async (req, res) => {
 </html>`,
     });
 
-    res.json({ message: 'If that email has an account, a code has been sent.' });
+    res.json({ message: 'Key sent! Check your inbox.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not send reset code' });
