@@ -116,7 +116,13 @@ router.post('/google', async (req, res) => {
 });
 
 router.get('/me', requireAuth, async (req, res) => {
-  res.json({ email: req.user.email, isAdmin: req.user.isAdmin });
+  try {
+    const [rows] = await pool.query('SELECT name FROM users WHERE id = ?', [req.user.id]);
+    res.json({ email: req.user.email, isAdmin: req.user.isAdmin, name: rows[0]?.name || '' });
+  } catch (err) {
+    console.error(err);
+    res.json({ email: req.user.email, isAdmin: req.user.isAdmin, name: '' });
+  }
 });
 
 router.get('/users', requireAuth, requireAdmin, async (req, res) => {
