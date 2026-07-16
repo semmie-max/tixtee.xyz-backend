@@ -337,7 +337,12 @@ router.post('/reset-password', async (req, res) => {
 
 
 router.post('/logout', (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: true,
+    domain: '.tixtee.xyz',
+  });
   res.json({ message: 'Logged out' });
 });
 
