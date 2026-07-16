@@ -43,6 +43,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       groupchat_name, groupchat_rules, lineup,
       has_secret_guest, secret_guest_note, has_golden_seat, golden_seat_note,
       organizer_name, organizer_contact, age_limit, event_template,
+      sales_start_date, sales_end_date, refund_policy, allow_transfers,
       tickets
     } = req.body;
 
@@ -56,15 +57,17 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         image_url, has_groupchat, category, event_format, is_virtual, virtual_link, is_recurring,
         recurrence_pattern, social_instagram, social_twitter, social_tiktok, custom_url, latitude, longitude,
         groupchat_name, groupchat_rules, has_secret_guest, secret_guest_note, has_golden_seat, golden_seat_note,
-        organizer_name, organizer_contact, age_limit, event_template)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        organizer_name, organizer_contact, age_limit, event_template,
+        sales_start_date, sales_end_date, refund_policy, allow_transfers)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         req.user.id, title, description, event_date, start_time, end_time, venue, capacity, price,
         image_url, !!has_groupchat, category || 'Corporate event', event_format, !!is_virtual, virtual_link,
         !!is_recurring, recurrence_pattern, social_instagram, social_twitter, social_tiktok, custom_url,
         latitude || null, longitude || null,
         groupchat_name, groupchat_rules, !!has_secret_guest, secret_guest_note, !!has_golden_seat, golden_seat_note,
-        organizer_name || null, organizer_contact || null, age_limit || null, event_template || 'classic'
+        organizer_name || null, organizer_contact || null, age_limit || null, event_template || 'classic',
+        sales_start_date || null, sales_end_date || null, refund_policy || 'no_refunds', allow_transfers !== false
       ]
     );
 
