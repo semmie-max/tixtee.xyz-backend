@@ -125,6 +125,46 @@ router.get('/me', requireAuth, async (req, res) => {
   }
 });
 
+router.put('/profile', requireAuth, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Name cannot be empty' });
+    }
+    await pool.query('UPDATE users SET name = ? WHERE id = ?', [name.trim(), req.user.id]);
+    res.json({ message: 'Profile updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not update profile' });
+  }
+});
+
+router.post('/change-password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    }
+
+    const [rows] = await pool.query('SELECT password_hash FROM users WHERE id = ?', [req.user.id]);
+    if (!rows.length || !rows[0].password_hash) {
+      return res.status(400).json({ error: 'Password change is not available for this account' });
+    }
+
+    const match = await bcrypt.compare(currentPassword || '', rows[0].password_hash);
+    if (!match) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.user.id]);
+    res.json({ message: 'Password updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not change password' });
+  }
+});
+
 router.get('/users', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(

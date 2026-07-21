@@ -10,6 +10,7 @@ const uploadRoutes = require('./routes/upload');
 const chatRoutes = require('./routes/chat');
 const broadcastRoutes = require('./routes/broadcast');
 const settingsRoutes = require('./routes/settings');
+const waitlistRoutes = require('./routes/waitlist');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -28,6 +29,8 @@ app.use('/api/events', eventRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/broadcast', broadcastRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/waitlist', waitlistRoutes);
 
 app.get('/', (req, res) => res.send('Tixtee/OpenMic backend is running'));
 
