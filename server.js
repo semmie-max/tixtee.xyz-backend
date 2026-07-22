@@ -32,6 +32,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/broadcast', broadcastRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/waitlist', waitlistRoutes);
+app.use('/api/blogs', blogRoutes);
 
 app.get('/', (req, res) => res.send('Tixtee/OpenMic backend is running'));
 
@@ -39,3 +40,4 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
