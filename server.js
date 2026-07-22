@@ -11,6 +11,7 @@ const chatRoutes = require('./routes/chat');
 const broadcastRoutes = require('./routes/broadcast');
 const settingsRoutes = require('./routes/settings');
 const waitlistRoutes = require('./routes/waitlist');
+const blogRoutes = require('./routes/blogs');
 
 const app = express();
 app.set('trust proxy', 1);
