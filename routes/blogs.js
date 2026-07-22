@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db'); // adjust to match how you import your MySQL connection/pool
+const pool = require('../config/db');
 const { requireAuth, requireAdmin } = require('../middleware/auth'); // adjust to match your actual auth middleware names/paths
 
 // GET /api/blogs — list posts
@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
     const query = publishedOnly
       ? 'SELECT * FROM blogs WHERE is_draft = 0 ORDER BY created_at DESC'
       : 'SELECT * FROM blogs ORDER BY created_at DESC';
-    const [rows] = await db.query(query);
+    const [rows] = await pool.query(query);
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
 // GET /api/blogs/:slug — single post
 router.get('/:slug', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const [rows] = await pool.query(
       'SELECT * FROM blogs WHERE slug = ? OR id = ? LIMIT 1',
       [req.params.slug, req.params.slug]
     );
@@ -49,7 +49,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    const [result] = await db.query(
+    const [result] = await pool.query(
       'INSERT INTO blogs (title, slug, excerpt, content, image_url, is_draft, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
       [title, slug, excerpt || null, content, image_url || null, is_draft ? 1 : 0]
     );
