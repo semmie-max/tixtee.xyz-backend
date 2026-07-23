@@ -10,4 +10,18 @@ const pool = mysql.createPool({
   connectionLimit: 10,
 });
 
+
+(async () => {
+  try {
+    const [db] = await pool.query("SELECT DATABASE() AS db");
+    console.log("Current database:", db);
+
+    const [tables] = await pool.query("SHOW TABLES");
+    console.log("Tables:", tables);
+  } catch (err) {
+    console.error("Database test failed:", err);
+  }
+})();
+
+
 module.exports = pool;
