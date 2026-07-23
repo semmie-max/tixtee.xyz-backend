@@ -61,4 +61,25 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// DELETE /api/blogs/:id — delete a post (admin only)
+router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [result] = await pool.query(
+      'DELETE FROM blogs WHERE id = ?',
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    res.json({ message: 'Blog deleted successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not delete post' });
+  }
+});
+
 module.exports = router;
