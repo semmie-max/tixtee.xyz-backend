@@ -35,4 +35,54 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+
+// ADMIN ONLY — everyone who joined the waitlist AND every registered user,
+// combined into one deduped mailing list
+router.get('/mailing-list', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT email, 'user' AS source, name, created_at FROM users
+      UNION
+      SELECT email, 'waitlist' AS source, NULL AS name, created_at FROM waitlist_emails
+      ORDER BY created_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load mailing list' });
+  }
+});
+
+// Just the deduped email list, for actually sending a broadcast
+router.get('/mailing-list/emails', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT email FROM users
+      UNION
+      SELECT email FROM waitlist_emails
+    `);
+    res.json(rows.map(r => r.email));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load emails' });
+  }
+});
+
+// ADMIN ONLY — everyone who joined the waitlist AND every registered user,
+// combined into one deduped mailing list
+router.get('/mailing-list', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT email, 'user' AS source, name, created_at FROM users
+      UNION
+      SELECT email, 'waitlist' AS source, NULL AS name, created_at FROM waitlist_emails
+      ORDER BY created_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load mailing list' });
+  }
+});
+
 module.exports = router;
