@@ -8,8 +8,11 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'openmic',
   waitForConnections: true,
   connectionLimit: 10,
+  ssl: {
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: true,
+  },
 });
-
 
 (async () => {
   try {
@@ -22,6 +25,5 @@ const pool = mysql.createPool({
     console.error("Database test failed:", err);
   }
 })();
-
 
 module.exports = pool;
