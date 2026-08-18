@@ -64,7 +64,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         req.user.id, title, description, event_date, start_time, end_time, venue, capacity, price,
-        image_url, !!has_groupchat, category || 'Corporate event', event_format, !!is_virtual, virtual_link,
+                image_url, !!has_groupchat, category || 'Music & Concerts', event_format, !!is_virtual, virtual_link,
         !!is_recurring, recurrence_pattern, social_instagram, social_twitter, social_tiktok, custom_url,
         latitude || null, longitude || null,
         groupchat_name, groupchat_rules, !!has_secret_guest, secret_guest_note, !!has_golden_seat, golden_seat_note,
@@ -94,21 +94,29 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       }
     }
 
-    if (Array.isArray(faqs) && faqs.length) {
-      const values = faqs
-        .filter(f => f.question && f.question.trim())
-        .map(f => [eventId, f.question.trim(), f.answer || null]);
-      if (values.length) {
-        await pool.query('INSERT INTO event_faqs (event_id, question, answer) VALUES ?', [values]);
+        if (Array.isArray(faqs) && faqs.length) {
+      try {
+        const values = faqs
+          .filter(f => f.question && f.question.trim())
+          .map(f => [eventId, f.question.trim(), f.answer || null]);
+        if (values.length) {
+          await pool.query('INSERT INTO event_faqs (event_id, question, answer) VALUES ?', [values]);
+        }
+      } catch (faqErr) {
+        console.error('Could not save FAQs (event still created):', faqErr.message);
       }
     }
 
     if (Array.isArray(sponsors) && sponsors.length) {
-      const values = sponsors
-        .filter(s => s.name && s.name.trim())
-        .map(s => [eventId, s.name.trim()]);
-      if (values.length) {
-        await pool.query('INSERT INTO event_sponsors (event_id, name) VALUES ?', [values]);
+      try {
+        const values = sponsors
+          .filter(s => s.name && s.name.trim())
+          .map(s => [eventId, s.name.trim()]);
+        if (values.length) {
+          await pool.query('INSERT INTO event_sponsors (event_id, name) VALUES ?', [values]);
+        }
+      } catch (sponsorErr) {
+        console.error('Could not save sponsors (event still created):', sponsorErr.message);
       }
     }
 
