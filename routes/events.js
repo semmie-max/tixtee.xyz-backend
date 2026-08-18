@@ -16,17 +16,33 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM events WHERE id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Event not found' });
+    const [rows] = await pool.query(
+      'SELECT * FROM events WHERE id = ? OR custom_url = ?',
+      [req.params.id, req.params.id]
+    );
 
-    const [lineup] = await pool.query('SELECT name, role FROM event_lineup WHERE event_id = ?', [req.params.id]);
-    const [tickets] = await pool.query('SELECT id, tier_name, price, quantity FROM event_tickets WHERE event_id = ?', [req.params.id]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
 
     const event = rows[0];
+
+    // Use the actual event ID for related tables
+    const [lineup] = await pool.query(
+      'SELECT name, role FROM event_lineup WHERE event_id = ?',
+      [event.id]
+    );
+
+    const [tickets] = await pool.query(
+      'SELECT id, tier_name, price, quantity FROM event_tickets WHERE event_id = ?',
+      [event.id]
+    );
+
     event.lineup = lineup;
     event.tickets = tickets;
 
     res.json(event);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not load event' });
