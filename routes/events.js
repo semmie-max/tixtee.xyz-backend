@@ -41,8 +41,20 @@ router.get('/:id', async (req, res) => {
       [event.id]
     );
 
+        const [faqs] = await pool.query(
+      'SELECT question, answer FROM event_faqs WHERE event_id = ?',
+      [event.id]
+    );
+
+    const [sponsors] = await pool.query(
+      'SELECT name FROM event_sponsors WHERE event_id = ?',
+      [event.id]
+    );
+
     event.lineup = lineup;
     event.tickets = tickets;
+        event.faqs = faqs;
+    event.sponsors = sponsors;
 
     res.json(event);
 
