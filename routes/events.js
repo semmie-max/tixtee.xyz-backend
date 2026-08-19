@@ -4,9 +4,12 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM events ORDER BY event_date ASC');
+    const [rows] = await pool.query(
+      'SELECT * FROM events WHERE creator_id = ? ORDER BY event_date ASC',
+      [req.user.id]
+    );
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -148,7 +151,10 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const [result] = await pool.query('DELETE FROM events WHERE id = ?', [req.params.id]);
+    const [result] = await pool.query(
+      'DELETE FROM events WHERE id = ? AND creator_id = ?',
+      [req.params.id, req.user.id]
+    );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Event not found' });
     res.json({ message: 'Event deleted' });
   } catch (err) {
