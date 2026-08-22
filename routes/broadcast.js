@@ -1,10 +1,10 @@
 const express = require('express');
-const { Resend } = require('resend');
+const { SendByte } = require('@sendbyte/node');
 const pool = require('../config/db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
+const sendbyte = new SendByte(process.env.SENDBYTE_API_KEY);
 
 // ADMIN ONLY — send an email to some or all signed-up users
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
@@ -29,22 +29,20 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     }
 
     const results = await Promise.allSettled(
-  emails.map(email =>
-    resend.emails.send({
-      from: 'Tixtee <noreply@mail.tixtee.xyz>',
-      to: email,
-      subject,
-      template: {
-        id: 'welcome-email',
-        variables: {
-          SUBJECT_HEADING: subject,
-          MESSAGE_BODY: message,
-          RECIPIENT_EMAIL: email,
-        },
-      },
-    })
-  )
-);
+      emails.map(email =>
+        sendbyte.emails.send({
+          from: 'Tixtee <noreply@mail.tixtee.xyz>',
+          to: email,
+          subject,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto;">
+              <h2>${subject}</h2>
+              <p>${message}</p>
+            </div>
+          `,
+        })
+      )
+    );
 
     const sent = results.filter(r => r.status === 'fulfilled').length;
     const failed = results.length - sent;
