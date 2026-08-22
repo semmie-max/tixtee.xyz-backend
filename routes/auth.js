@@ -3,12 +3,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
-const { Resend } = require('resend');
+const { SendByte } = require('sendbyte');
 const pool = require('../config/db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const sendbyte = new SendByte(process.env.SENDBYTE_API_KEY);
 
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -191,7 +191,7 @@ router.post('/forgot-password', async (req, res) => {
 
     await pool.query('INSERT INTO password_resets (user_id, code, expires_at) VALUES (?,?,?)', [user.id, code, expiresAt]);
 
-    await resend.emails.send({
+    await sendbyte.emails.send({
       from: 'Tixtee <noreply@mail.tixtee.xyz>',
       to: email,
       subject: 'Your  password reset code',
