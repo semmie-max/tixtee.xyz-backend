@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
-const { SendByte } = require('sendbyte');
+const { SendByte } = require('@sendbyte/node');
 const pool = require('../config/db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
