@@ -4,6 +4,18 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+router.get('/public', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM events ORDER BY event_date ASC'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load events' });
+  }
+});
+
 router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(
