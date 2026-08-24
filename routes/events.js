@@ -3,6 +3,25 @@ const pool = require('../config/db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
+function slugify(str){
+  return (str || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+async function generateUniqueSlug(name){
+  const base = slugify(name) || 'chat';
+  let slug = base;
+  let i = 1;
+  while(true){
+    const [existing] = await pool.query('SELECT id FROM events WHERE groupchat_slug = ?', [slug]);
+    if(!existing.length) return slug;
+    i++;
+    slug = `${base}-${i}`;
+  }
+}
 
 router.get('/public', async (req, res) => {
   try {
@@ -16,7 +35,7 @@ router.get('/public', async (req, res) => {
   }
 });
 
-router.get('/', requireAuth, requireAdmin, async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT * FROM events WHERE creator_id = ? ORDER BY event_date ASC',
@@ -94,23 +113,27 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     if (!title || !event_date) {
       return res.status(400).json({ error: 'Title and date are required' });
     }
+        let groupchat_slug = null;
+    if (has_groupchat && groupchat_name) {
+      groupchat_slug = await generateUniqueSlug(groupchat_name);
+    }
 
     const [result] = await pool.query(
       `INSERT INTO events
        (creator_id, title, description, event_date, start_time, end_time, venue, capacity, price,
         image_url, has_groupchat, category, event_format, is_virtual, virtual_link, is_recurring,
         recurrence_pattern, social_instagram, social_twitter, social_tiktok, custom_url, latitude, longitude,
-                groupchat_name, groupchat_rules, groupchat_link, has_secret_guest, secret_guest_note, has_golden_seat, golden_seat_note,
+        groupchat_name, groupchat_slug, groupchat_rules, groupchat_link, has_secret_guest, secret_guest_note, has_golden_seat, golden_seat_note,
         organizer_name, organizer_contact, age_limit, event_template,
         sales_start_date, sales_end_date, refund_policy, allow_transfers,
         groupchat_created, enable_networking, event_rules, dress_code, event_theme, tags, highlights)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         req.user.id, title, description, event_date, start_time, end_time, venue, capacity, price,
                 image_url, !!has_groupchat, category || 'Music & Concerts', event_format, !!is_virtual, virtual_link,
         !!is_recurring, recurrence_pattern, social_instagram, social_twitter, social_tiktok, custom_url,
         latitude || null, longitude || null,
-                groupchat_name, groupchat_rules, groupchat_link || null, !!has_secret_guest, secret_guest_note, !!has_golden_seat, golden_seat_note,
+        groupchat_name, groupchat_slug, groupchat_rules, groupchat_link || null, !!has_secret_guest, secret_guest_note, !!has_golden_seat, golden_seat_note,
         organizer_name || null, organizer_contact || null, age_limit || null, event_template || 'classic',
         sales_start_date || null, sales_end_date || null, refund_policy || 'no_refunds', allow_transfers !== false,
         !!groupchat_created, !!enable_networking, event_rules || null, dress_code || null, event_theme || null, tags || null, highlights || null

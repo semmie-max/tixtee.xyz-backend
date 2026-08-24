@@ -13,7 +13,7 @@ const router = express.Router();
 router.get('/active', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT e.id, e.title, e.image_url, e.groupchat_name, e.event_date,
+            `SELECT e.id, e.title, e.image_url, e.groupchat_name, e.groupchat_link, e.event_date,
               (SELECT m.message FROM group_chat_messages m
                 WHERE m.event_id = e.id ORDER BY m.created_at DESC LIMIT 1) AS last_message,
               (SELECT m.created_at FROM group_chat_messages m
@@ -95,6 +95,84 @@ router.post('/:eventId/messages', requireAuth, async (req, res) => {
       event_id: Number(req.params.eventId),
       sender_id: req.user.id,
       sender_name: req.user.name || 'You',
+      message: message.trim(),
+      created_at: new Date()
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not send message' });
+  }
+});
+
+/**
+ * GET /api/chat/slug/:slug
+ * Public — resolves a shared chat link (tixtee.xyz/<slug>) to its event.
+ */
+router.get('/slug/:slug', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, title, groupchat_name, image_url
+       FROM events
+       WHERE groupchat_slug = ? AND has_groupchat = 1 AND groupchat_created = 1`,
+      [req.params.slug]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'This chat link is not active' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load this chat' });
+  }
+});
+
+/** GET /api/chat/public/:eventId/messages — public message fetch, no login */
+router.get('/public/:eventId/messages', async (req, res) => {
+  try {
+    const [events] = await pool.query(
+      'SELECT id, has_groupchat, groupchat_created FROM events WHERE id = ?',
+      [req.params.eventId]
+    );
+    if (!events.length) return res.status(404).json({ error: 'Event not found' });
+    if (!events[0].has_groupchat || !events[0].groupchat_created) {
+      return res.status(403).json({ error: 'This event has no active group chat' });
+    }
+    const [messages] = await pool.query(
+      `SELECT id, sender_id, guest_name, guest_color, message, created_at
+       FROM group_chat_messages WHERE event_id = ? ORDER BY created_at ASC`,
+      [req.params.eventId]
+    );
+    res.json(messages);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load messages' });
+  }
+});
+
+/** POST /api/chat/public/:eventId/messages — guest sends a message, no login */
+router.post('/public/:eventId/messages', async (req, res) => {
+  try {
+    const { message, guest_name, guest_color } = req.body;
+    if (!message || !message.trim()) return res.status(400).json({ error: 'Message cannot be empty' });
+    if (!guest_name || !guest_name.trim()) return res.status(400).json({ error: 'A name is required to chat' });
+
+    const [events] = await pool.query(
+      'SELECT id, has_groupchat, groupchat_created FROM events WHERE id = ?',
+      [req.params.eventId]
+    );
+    if (!events.length) return res.status(404).json({ error: 'Event not found' });
+    if (!events[0].has_groupchat || !events[0].groupchat_created) {
+      return res.status(403).json({ error: 'This event has no active group chat' });
+    }
+
+    const [result] = await pool.query(
+      'INSERT INTO group_chat_messages (event_id, guest_name, guest_color, message) VALUES (?, ?, ?, ?)',
+      [req.params.eventId, guest_name.trim().slice(0,100), guest_color || '#47034E', message.trim()]
+    );
+
+    res.json({
+      id: result.insertId,
+      event_id: Number(req.params.eventId),
+      guest_name: guest_name.trim(),
+      guest_color: guest_color || '#47034E',
       message: message.trim(),
       created_at: new Date()
     });
