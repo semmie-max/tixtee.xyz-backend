@@ -83,7 +83,7 @@ router.post('/checkout', async (req, res) => {
     res.json({ order_id: orderId, checkout_url: bachsData.checkout_url });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Could not start checkout', detail: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Could not start checkout' });
   }
 });
 

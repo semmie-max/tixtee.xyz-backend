@@ -30,15 +30,7 @@ router.get('/active', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-/**
- * GET /api/chat/:eventId/messages
- * Message history for one event's group chat.
- *
- * NOTE: right now this only checks that the chat is active — it does not yet
- * check that the requester actually bought a ticket to this event (there's no
- * ticket-ownership table wired up yet). Once you have one, add that check here
- * so random logged-in users can't read/post in someone else's event chat.
- */
+
 router.get('/:eventId/messages', requireAuth, async (req, res) => {
   try {
     const [events] = await pool.query(
