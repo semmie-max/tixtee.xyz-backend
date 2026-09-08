@@ -75,7 +75,7 @@ router.post('/checkout', async (req, res) => {
     if (!bachsRes.ok) {
       console.error('Bachs checkout error:', bachsData);
       await pool.query('UPDATE orders SET status = "failed" WHERE id = ?', [orderId]);
-      return res.status(502).json({ error: 'Could not start checkout', bachs_status: bachsRes.status, bachs_response: bachsData });
+      return res.status(502).json({ error: 'Could not start checkout' });
     }
 
     await pool.query('UPDATE orders SET checkout_id = ? WHERE id = ?', [bachsData.checkout_id, orderId]);
