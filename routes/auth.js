@@ -125,21 +125,45 @@ router.post('/google', async (req, res) => {
 
 router.get('/me', requireAuth, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT name FROM users WHERE id = ?', [req.user.id]);
-    res.json({ email: req.user.email, isAdmin: req.user.isAdmin, name: rows[0]?.name || '' });
+    const [rows] = await pool.query('SELECT name, avatar_url FROM users WHERE id = ?', [req.user.id]);
+    res.json({
+      email: req.user.email,
+      isAdmin: req.user.isAdmin,
+      name: rows[0]?.name || '',
+      avatar_url: rows[0]?.avatar_url || null
+    });
   } catch (err) {
     console.error(err);
-    res.json({ email: req.user.email, isAdmin: req.user.isAdmin, name: '' });
+    res.json({ email: req.user.email, isAdmin: req.user.isAdmin, name: '', avatar_url: null });
   }
 });
 
 router.put('/profile', requireAuth, async (req, res) => {
   try {
-    const { name } = req.body;
-    if (!name || !name.trim()) {
+    const { name, avatar_url } = req.body;
+
+    if (name !== undefined && !name.trim()) {
       return res.status(400).json({ error: 'Name cannot be empty' });
     }
-    await pool.query('UPDATE users SET name = ? WHERE id = ?', [name.trim(), req.user.id]);
+    if (name === undefined && avatar_url === undefined) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    const fields = [];
+    const values = [];
+
+    if (name !== undefined) {
+      fields.push('name = ?');
+      values.push(name.trim());
+    }
+    if (avatar_url !== undefined) {
+      fields.push('avatar_url = ?');
+      values.push(avatar_url);
+    }
+
+    values.push(req.user.id);
+    await pool.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+
     res.json({ message: 'Profile updated' });
   } catch (err) {
     console.error(err);
