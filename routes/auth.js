@@ -56,6 +56,14 @@ router.post('/signup', async (req, res) => {
 
     const user = { id: result.insertId, email, is_admin: admin };
     issueToken(res, user);
+
+    sendbyte.emails.send({
+      from: 'Tixtee <noreply@mail.tixtee.xyz>',
+      to: email,
+      template_id: '5645b67c-1080-4af1-ab1e-7bc3dda7902d',
+      variables: { name: name },
+    }).catch(err => console.error('Welcome email failed to send:', err));
+
     res.json({
       isAdmin: admin,
       message: admin ? 'Welcome back' : 'Account created — your dashboard unlocks at launch'
