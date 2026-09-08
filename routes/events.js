@@ -39,8 +39,8 @@ router.get('/public', async (req, res) => {
 router.get('/', requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM events WHERE creator_id = ? ORDER BY event_date ASC',
-      [req.user.id]
+      'SELECT * FROM events WHERE creator_id = ? AND status != ? ORDER BY event_date ASC',
+      [req.user.id, 'cancelled']
     );
     res.json(rows);
   } catch (err) {
