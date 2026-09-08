@@ -26,7 +26,8 @@ async function generateUniqueSlug(name){
 router.get('/public', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM events ORDER BY event_date ASC'
+      'SELECT * FROM events WHERE status = ? ORDER BY event_date ASC',
+      ['active']
     );
     res.json(rows);
   } catch (err) {
@@ -198,12 +199,47 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const [result] = await pool.query(
-      'DELETE FROM events WHERE id = ? AND creator_id = ?',
-      [req.params.id, req.user.id]
+    const [orders] = await pool.query(
+      'SELECT COUNT(*) AS count FROM orders WHERE event_id = ?',
+      [req.params.id]
     );
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Event not found' });
-    res.json({ message: 'Event deleted' });
+
+    if (orders[0].count > 0) {
+      const [result] = await pool.query(
+        'UPDATE events SET status = ? WHERE id = ? AND creator_id = ?',
+        ['cancelled', req.params.id, req.user.id]
+      );
+      if (result.affectedRows === 0) return res.status(404).json({ error: 'Event not found' });
+      return res.json({ message: 'Event has existing orders, so it was cancelled instead of deleted' });
+    }
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      await conn.query('DELETE FROM event_lineup WHERE event_id = ?', [req.params.id]);
+      await conn.query('DELETE FROM event_tickets WHERE event_id = ?', [req.params.id]);
+      await conn.query('DELETE FROM event_faqs WHERE event_id = ?', [req.params.id]);
+      await conn.query('DELETE FROM event_sponsors WHERE event_id = ?', [req.params.id]);
+
+      const [result] = await conn.query(
+        'DELETE FROM events WHERE id = ? AND creator_id = ?',
+        [req.params.id, req.user.id]
+      );
+
+      if (result.affectedRows === 0) {
+        await conn.rollback();
+        conn.release();
+        return res.status(404).json({ error: 'Event not found' });
+      }
+
+      await conn.commit();
+      conn.release();
+      res.json({ message: 'Event deleted' });
+    } catch (innerErr) {
+      await conn.rollback();
+      conn.release();
+      throw innerErr;
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not delete event' });
