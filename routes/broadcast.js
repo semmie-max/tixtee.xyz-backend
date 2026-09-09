@@ -33,13 +33,11 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         sendbyte.emails.send({
           from: 'Tixtee <noreply@mail.tixtee.xyz>',
           to: email,
-          subject,
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto;">
-              <h2>${subject}</h2>
-              <p>${message}</p>
-            </div>
-          `,
+          template_id: 'dc499593-29d1-4d0a-a05c-6377126ba742',
+          variables: {
+            SUBJECT: subject,
+            MESSAGE: message,
+          },
         })
       )
     );
