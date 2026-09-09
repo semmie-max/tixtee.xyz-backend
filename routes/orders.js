@@ -3,6 +3,13 @@ const crypto = require('crypto');
 const pool = require('../config/db');
 
 const router = express.Router();
+async function generateUniqueTicketCode(){
+  while(true){
+    const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
+    const [existing] = await pool.query('SELECT id FROM orders WHERE ticket_code = ?', [code]);
+    if(!existing.length) return code;
+  }
+}
 
 const BACHS_API_KEY = process.env.BACHS_API_KEY;
 const BACHS_BASE_URL = process.env.BACHS_BASE_URL || 'https://sandbox-api.bachs.io';
@@ -145,9 +152,10 @@ router.post('/webhook', async (req, res) => {
       const [orders] = await pool.query('SELECT * FROM orders WHERE checkout_id = ?', [checkoutId]);
       if (orders.length && orders[0].status !== 'paid') {
         const order = orders[0];
+        const ticketCode = await generateUniqueTicketCode();
         await pool.query(
-          'UPDATE orders SET status = "paid", charge_id = ? WHERE id = ?',
-          [event.data.charge_id, order.id]
+          'UPDATE orders SET status = "paid", charge_id = ?, ticket_code = ? WHERE id = ?',
+          [event.data.charge_id, ticketCode, order.id]
         );
         await pool.query(
           'UPDATE event_tickets SET quantity_sold = quantity_sold + ? WHERE id = ?',

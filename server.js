@@ -37,6 +37,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/waitlist', waitlistRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/tickets', require('./routes/tickets'));
 
 app.get('/', (req, res) => res.send('Tixtee/OpenMic backend is running'));
 
