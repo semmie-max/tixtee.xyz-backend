@@ -4,9 +4,19 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+const TICKET_CODE_CHARS = 'ABCDEFGHJKLMNPQRTUVWXYZ234679';
+
+function randomTicketCode(length = 6){
+  let code = '';
+  for(let i = 0; i < length; i++){
+    code += TICKET_CODE_CHARS.charAt(Math.floor(Math.random() * TICKET_CODE_CHARS.length));
+  }
+  return code;
+}
+
 async function generateUniqueTicketCode(){
   while(true){
-    const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
+    const code = randomTicketCode();
     const [existing] = await pool.query('SELECT id FROM orders WHERE ticket_code = ?', [code]);
     if(!existing.length) return code;
   }
@@ -23,8 +33,9 @@ router.post('/confirm', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { code } = req.body;
 
-    if (!code || !/^\d{6}$/.test(code)) {
-      return res.status(400).json({ error: 'Enter a valid 6-digit code.' });
+    const normalizedCode = (code || '').toUpperCase().trim();
+    if (!normalizedCode || !/^[ABCDEFGHJKLMNPQRTUVWXYZ234679]{6}$/.test(normalizedCode)) {
+      return res.status(400).json({ error: 'Enter a valid 6-character ticket code.' });
     }
 
     const [rows] = await pool.query(
@@ -32,7 +43,7 @@ router.post('/confirm', requireAuth, requireAdmin, async (req, res) => {
        FROM orders o
        JOIN events e ON e.id = o.event_id
        WHERE o.ticket_code = ?`,
-      [code]
+      [normalizedCode]
     );
 
     if (!rows.length) {
