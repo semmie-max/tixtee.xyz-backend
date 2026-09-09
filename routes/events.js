@@ -52,7 +52,10 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM events WHERE id = ? OR custom_url = ?',
+      `SELECT events.*, users.name AS organizer_name, users.email AS organizer_contact
+       FROM events
+       JOIN users ON events.creator_id = users.id
+       WHERE events.id = ? OR events.custom_url = ?`,
       [req.params.id, req.params.id]
     );
 
@@ -103,9 +106,9 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       venue, capacity, price, image_url, has_groupchat, category,
       event_format, is_virtual, virtual_link, is_recurring, recurrence_pattern,
       social_instagram, social_twitter, social_tiktok, custom_url, latitude,longitude,
-            groupchat_name, groupchat_rules, groupchat_link, lineup,
+      groupchat_name, groupchat_rules, groupchat_link, lineup,
       has_secret_guest, secret_guest_note, has_golden_seat, golden_seat_note,
-      organizer_name, organizer_contact, age_limit, event_template,
+      age_limit, event_template,
       sales_start_date, sales_end_date, refund_policy, allow_transfers,
       groupchat_created, enable_networking, event_rules, dress_code, event_theme, tags, highlights,
       tickets, faqs, sponsors
@@ -125,17 +128,17 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
         image_url, has_groupchat, category, event_format, is_virtual, virtual_link, is_recurring,
         recurrence_pattern, social_instagram, social_twitter, social_tiktok, custom_url, latitude, longitude,
         groupchat_name, groupchat_slug, groupchat_rules, groupchat_link, has_secret_guest, secret_guest_note, has_golden_seat, golden_seat_note,
-        organizer_name, organizer_contact, age_limit, event_template,
+                age_limit, event_template,
         sales_start_date, sales_end_date, refund_policy, allow_transfers,
         groupchat_created, enable_networking, event_rules, dress_code, event_theme, tags, highlights)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         req.user.id, title, description, event_date, start_time, end_time, venue, capacity, price,
                 image_url, !!has_groupchat, category || 'Music & Concerts', event_format, !!is_virtual, virtual_link,
         !!is_recurring, recurrence_pattern, social_instagram, social_twitter, social_tiktok, custom_url,
         latitude || null, longitude || null,
         groupchat_name, groupchat_slug, groupchat_rules, groupchat_link || null, !!has_secret_guest, secret_guest_note, !!has_golden_seat, golden_seat_note,
-        organizer_name || null, organizer_contact || null, age_limit || null, event_template || 'classic',
+        age_limit || null, event_template || 'classic',
         sales_start_date || null, sales_end_date || null, refund_policy || 'no_refunds', allow_transfers !== false,
         !!groupchat_created, !!enable_networking, event_rules || null, dress_code || null, event_theme || null, tags || null, highlights || null
       ]
