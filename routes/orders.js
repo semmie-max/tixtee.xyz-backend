@@ -1,11 +1,22 @@
 const express = require('express');
 const crypto = require('crypto');
 const pool = require('../config/db');
+const { sendTicketConfirmationEmail } = require('../utils/ticketEmail');
 
 const router = express.Router();
+const TICKET_CODE_CHARS = 'ABCDEFGHJKLMNPQRTUVWXYZ234679';
+
+function randomTicketCode(length = 6){
+  let code = '';
+  for(let i = 0; i < length; i++){
+    code += TICKET_CODE_CHARS.charAt(Math.floor(Math.random() * TICKET_CODE_CHARS.length));
+  }
+  return code;
+}
+
 async function generateUniqueTicketCode(){
   while(true){
-    const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
+    const code = randomTicketCode();
     const [existing] = await pool.query('SELECT id FROM orders WHERE ticket_code = ?', [code]);
     if(!existing.length) return code;
   }
@@ -153,14 +164,36 @@ router.post('/webhook', async (req, res) => {
       if (orders.length && orders[0].status !== 'paid') {
         const order = orders[0];
         const ticketCode = await generateUniqueTicketCode();
+        const accessToken = crypto.randomBytes(24).toString('hex');
         await pool.query(
-          'UPDATE orders SET status = "paid", charge_id = ?, ticket_code = ? WHERE id = ?',
-          [event.data.charge_id, ticketCode, order.id]
+          'UPDATE orders SET status = "paid", charge_id = ?, ticket_code = ?, access_token = ? WHERE id = ?',
+          [event.data.charge_id, ticketCode, accessToken, order.id]
         );
         await pool.query(
           'UPDATE event_tickets SET quantity_sold = quantity_sold + ? WHERE id = ?',
           [order.quantity, order.ticket_id]
         );
+
+        const verificationLink = `https://tixtee.xyz/my-ticket?orderId=${order.id}&token=${accessToken}`;
+
+        const [ticketRows] = await pool.query(
+          'SELECT tier_name, price FROM event_tickets WHERE id = ?',
+          [order.ticket_id]
+        );
+        const [eventRows] = await pool.query(
+          'SELECT title FROM events WHERE id = ?',
+          [order.event_id]
+        );
+
+        await sendTicketConfirmationEmail({
+          toEmail: order.buyer_email,
+          buyerName: order.buyer_name,
+          eventTitle: eventRows[0] ? eventRows[0].title : '',
+          ticketName: ticketRows[0] ? ticketRows[0].tier_name : 'Ticket',
+          ticketPrice: order.total_amount,
+          orderId: order.id,
+          verificationLink,
+        });
       }
     } else if (event.type === 'collection.failed') {
       await pool.query(
