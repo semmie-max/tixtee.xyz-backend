@@ -7,9 +7,8 @@ const router = express.Router();
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id, name, avatar_url, handle, bio, cover_image_url, is_verified,
-              social_instagram, social_twitter, social_facebook
-       FROM users WHERE id = ? OR handle = ?`,
+      `SELECT id, name, avatar_url, email
+       FROM users WHERE id = ? OR email = ?`,
       [req.params.id, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Organizer not found' });
@@ -40,7 +39,16 @@ router.get('/:id', async (req, res) => {
     }
 
     res.json({
-      ...organizer,
+      id: organizer.id,
+      name: organizer.name,
+      avatar_url: organizer.avatar_url,
+      handle: organizer.email ? organizer.email.split('@')[0] : null,
+      bio: null,
+      cover_image_url: null,
+      is_verified: false,
+      social_instagram: null,
+      social_twitter: null,
+      social_facebook: null,
       event_count: eventCount.count,
       avg_rating: ratingStats.avg_rating,
       rating_count: ratingStats.rating_count,
