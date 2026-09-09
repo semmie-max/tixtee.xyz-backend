@@ -1,6 +1,5 @@
 const express = require('express');
 const pool = require('../config/db');
-const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -35,7 +34,13 @@ router.get('/:id', async (req, res) => {
           [organizer.id, decoded.id]
         );
         if (existing) userRating = existing.rating;
-      } catch (err) { /* not logged in — ignore */ }
+      } catch (err) { /* not logged in, fall through to guest check */ }
+    } else if (req.query.guest_id) {
+      const [[existing]] = await pool.query(
+        'SELECT rating FROM organizer_ratings WHERE organizer_id = ? AND guest_id = ?',
+        [organizer.id, req.query.guest_id]
+      );
+      if (existing) userRating = existing.rating;
     }
 
     res.json({
@@ -73,19 +78,40 @@ router.get('/:id/events', async (req, res) => {
   }
 });
 
-router.post('/:id/rate', requireAuth, async (req, res) => {
+router.post('/:id/rate', async (req, res) => {
   try {
-    const { rating } = req.body;
+    const { rating, guest_id } = req.body;
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({ error: 'Rating must be between 1 and 5' });
     }
 
-    await pool.query(
-      `INSERT INTO organizer_ratings (organizer_id, user_id, rating)
-       VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE rating = VALUES(rating)`,
-      [req.params.id, req.user.id, rating]
-    );
+    let userId = null;
+    if (req.cookies && req.cookies.token) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(req.cookies.token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      } catch (err) { /* not logged in, fall back to guest */ }
+    }
+
+    if (userId) {
+      await pool.query(
+        `INSERT INTO organizer_ratings (organizer_id, user_id, rating)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE rating = VALUES(rating)`,
+        [req.params.id, userId, rating]
+      );
+    } else {
+      if (!guest_id) {
+        return res.status(400).json({ error: 'Missing guest_id' });
+      }
+      await pool.query(
+        `INSERT INTO organizer_ratings (organizer_id, guest_id, rating)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE rating = VALUES(rating)`,
+        [req.params.id, guest_id, rating]
+      );
+    }
 
     const [[stats]] = await pool.query(
       'SELECT AVG(rating) AS avg_rating, COUNT(*) AS rating_count FROM organizer_ratings WHERE organizer_id = ?',
@@ -102,9 +128,10 @@ router.post('/:id/rate', requireAuth, async (req, res) => {
 router.get('/:id/comments', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT c.id, c.text, c.created_at, u.name AS author_name
+      `SELECT c.id, c.text, c.created_at,
+              COALESCE(u.name, c.guest_name, 'Anonymous') AS author_name
        FROM organizer_comments c
-       JOIN users u ON u.id = c.user_id
+       LEFT JOIN users u ON u.id = c.user_id
        WHERE c.organizer_id = ?
        ORDER BY c.created_at DESC`,
       [req.params.id]
@@ -116,16 +143,27 @@ router.get('/:id/comments', async (req, res) => {
   }
 });
 
-router.post('/:id/comments', requireAuth, async (req, res) => {
+router.post('/:id/comments', async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, guest_name } = req.body;
     if (!text || !text.trim()) {
       return res.status(400).json({ error: 'Comment cannot be empty' });
     }
 
+    let userId = null;
+    if (req.cookies && req.cookies.token) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(req.cookies.token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      } catch (err) { /* not logged in, treat as guest */ }
+    }
+
+    const cleanGuestName = guest_name && guest_name.trim() ? guest_name.trim().slice(0, 60) : 'Anonymous';
+
     await pool.query(
-      'INSERT INTO organizer_comments (organizer_id, user_id, text) VALUES (?, ?, ?)',
-      [req.params.id, req.user.id, text.trim().slice(0, 1000)]
+      'INSERT INTO organizer_comments (organizer_id, user_id, guest_name, text) VALUES (?, ?, ?, ?)',
+      [req.params.id, userId, userId ? null : cleanGuestName, text.trim().slice(0, 1000)]
     );
 
     res.json({ message: 'Comment posted' });
