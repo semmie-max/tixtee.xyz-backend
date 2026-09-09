@@ -113,5 +113,28 @@ router.post('/:orderId/regenerate-code', requireAuth, requireAdmin, async (req, 
     res.status(500).json({ error: 'Could not regenerate ticket code' });
   }
 });
+/**
+ * GET /api/tickets/checked-in
+ * Returns everyone who has been scanned at least once for this organizer's events,
+ * sorted alphabetically by name.
+ */
+router.get('/checked-in', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT o.id, COALESCE(NULLIF(o.buyer_name, ''), o.buyer_email) AS holder_name,
+              o.buyer_email, o.scan_count, e.title AS event_title
+       FROM orders o
+       JOIN events e ON e.id = o.event_id
+       WHERE e.creator_id = ? AND o.status = 'paid' AND o.scan_count > 0
+       ORDER BY holder_name ASC`,
+      [req.user.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load checked-in guests' });
+  }
+});
+
 
 module.exports = router;
