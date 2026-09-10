@@ -135,6 +135,30 @@ router.get('/checked-in', requireAuth, requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'Could not load checked-in guests' });
   }
 });
+/**
+ * GET /api/tickets/my-ticket/:orderId
+ * Public route for the buyer to view their own ticket code, using the access_token
+ * sent to them in their confirmation email. Not behind requireAuth.
+ */
+router.get('/my-ticket/:orderId', async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).json({ error: 'Missing access token.' });
+
+    const [rows] = await pool.query(
+      'SELECT ticket_code, buyer_name, status FROM orders WHERE id = ? AND access_token = ?',
+      [req.params.orderId, token]
+    );
+
+    if (!rows.length) return res.status(404).json({ error: 'Ticket not found.' });
+    if (rows[0].status !== 'paid') return res.status(400).json({ error: 'This order has not been paid for.' });
+
+    res.json({ ticket_code: rows[0].ticket_code, holder_name: rows[0].buyer_name });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load ticket.' });
+  }
+});
 
 
 module.exports = router;
