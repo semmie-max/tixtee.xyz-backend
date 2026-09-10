@@ -13,6 +13,7 @@ const settingsRoutes = require('./routes/settings');
 const waitlistRoutes = require('./routes/waitlist');
 const blogRoutes = require('./routes/blogs');
 const orderRoutes = require('./routes/orders');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -37,6 +38,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/waitlist', waitlistRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/tickets', require('./routes/tickets'));
 app.use('/api/organizers', require('./routes/organizers'));
 
