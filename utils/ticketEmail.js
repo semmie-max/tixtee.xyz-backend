@@ -7,7 +7,7 @@ async function sendTicketConfirmationEmail({ toEmail, buyerName, eventTitle, tic
   const formattedPrice = `₦${Number(ticketPrice).toLocaleString('en-NG')}`;
 
   await sendbyte.emails.send({
-    from: 'Tixtee <noreply@mail.tixtee.xyz>',
+    from: 'Tixtee <noreply@tixtee.xyz>',
     to: toEmail,
     subject: 'Your Tixtee ticket is confirmed',
     html: `
