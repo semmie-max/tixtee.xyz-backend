@@ -2,6 +2,7 @@
 const pool = require('../config/db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { checkTicketSalesStatus } = require('../utils/ticketSalesCheck');
+const { sendEventLiveEmail } = require('../utils/eventLiveEmail');
 const { sendEventCancelledEmail } = require('../utils/eventCancelledEmail');
 
 const BACHS_API_KEY = process.env.BACHS_API_KEY;
@@ -253,6 +254,29 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       } catch (sponsorErr) {
         console.error('Could not save sponsors (event still created):', sponsorErr.message);
       }
+    }
+
+    try {
+      await pool.query(
+        `INSERT INTO notifications (user_id, event_id, type, title, message)
+         VALUES (?, ?, 'event_live', ?, ?)`,
+        [req.user.id, eventId, 'Your event is live', `"${title}" has been published and is ready to sell tickets.`]
+      );
+    } catch (notifErr) {
+      console.error('Could not create event-live notification:', notifErr.message);
+    }
+
+    try {
+      const [[organizer]] = await pool.query('SELECT name, email FROM users WHERE id = ?', [req.user.id]);
+      const eventLink = `https://tixtee.xyz/e/${custom_url || eventId}`;
+      await sendEventLiveEmail({
+        toEmail: organizer.email,
+        organizerName: organizer.name,
+        eventTitle: title,
+        eventLink,
+      });
+    } catch (emailErr) {
+      console.error('Could not send event-live email:', emailErr.message);
     }
 
     res.json({ id: eventId, message: 'Event created' });
