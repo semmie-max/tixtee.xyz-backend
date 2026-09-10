@@ -49,6 +49,25 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/check-url/:slug', requireAuth, async (req, res) => {
+  try {
+    const slug = (req.params.slug || '').toLowerCase().trim();
+    if (!slug) {
+      return res.status(400).json({ error: 'Missing slug' });
+    }
+
+    const [rows] = await pool.query(
+      'SELECT id FROM events WHERE custom_url = ?',
+      [slug]
+    );
+
+    res.json({ available: rows.length === 0 });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not check URL' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
