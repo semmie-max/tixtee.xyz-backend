@@ -236,6 +236,16 @@ router.post('/webhook', async (req, res) => {
         'UPDATE orders SET status = "expired" WHERE checkout_id = ? AND status = "pending"',
         [event.data.checkout_id]
       );
+    } else if (event.type === 'refund.paid') {
+      await pool.query(
+        'UPDATE orders SET refund_status = "success" WHERE refund_id = ?',
+        [event.data.refund_id]
+      );
+    } else if (event.type === 'refund.failed') {
+      await pool.query(
+        'UPDATE orders SET refund_status = "failed" WHERE refund_id = ?',
+        [event.data.refund_id]
+      );
     }
 
     res.json({ received: true });

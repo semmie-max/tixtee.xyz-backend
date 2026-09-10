@@ -2,6 +2,10 @@
 const pool = require('../config/db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { checkTicketSalesStatus } = require('../utils/ticketSalesCheck');
+const { sendEventCancelledEmail } = require('../utils/eventCancelledEmail');
+
+const BACHS_API_KEY = process.env.BACHS_API_KEY;
+const BACHS_BASE_URL = process.env.BACHS_BASE_URL || 'https://sandbox-api.bachs.io';
 
 const router = express.Router();
 function slugify(str){
@@ -263,12 +267,76 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const [orders] = await pool.query(
-      'SELECT COUNT(*) AS count FROM orders WHERE event_id = ?',
+    const [paidOrders] = await pool.query(
+      `SELECT o.id, o.buyer_email, o.buyer_name, o.total_amount, o.charge_id
+       FROM orders o WHERE o.event_id = ? AND o.status = 'paid'`,
       [req.params.id]
     );
 
-    if (orders[0].count > 0) {
+    if (paidOrders.length > 0) {
+      const [[eventRow]] = await pool.query(
+        'SELECT title FROM events WHERE id = ? AND creator_id = ?',
+        [req.params.id, req.user.id]
+      );
+      if (!eventRow) return res.status(404).json({ error: 'Event not found' });
+
+      const [result] = await pool.query(
+        'UPDATE events SET status = ? WHERE id = ? AND creator_id = ?',
+        ['cancelled', req.params.id, req.user.id]
+      );
+      if (result.affectedRows === 0) return res.status(404).json({ error: 'Event not found' });
+
+      for (const order of paidOrders) {
+        try {
+          await sendEventCancelledEmail({
+            toEmail: order.buyer_email,
+            buyerName: order.buyer_name,
+            eventTitle: eventRow.title,
+            ticketPrice: order.total_amount,
+          });
+        } catch (emailErr) {
+          console.error(`Could not send cancellation email for order ${order.id}:`, emailErr.message);
+        }
+
+        try {
+          const refundRes = await fetch(`${BACHS_BASE_URL}/v1/refunds`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${BACHS_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              charge_id: order.charge_id,
+              reference: `refund_order_${order.id}`,
+              reason: 'Event cancelled by organizer',
+              idempotency_key: `refund_order_${order.id}`
+            })
+          });
+          const refundData = await refundRes.json();
+
+          if (refundRes.ok) {
+            await pool.query(
+              'UPDATE orders SET refund_status = ?, refund_id = ? WHERE id = ?',
+              [refundData.status, refundData.refund_id, order.id]
+            );
+          } else {
+            console.error(`Refund failed for order ${order.id}:`, refundData);
+            await pool.query('UPDATE orders SET refund_status = ? WHERE id = ?', ['failed', order.id]);
+          }
+        } catch (refundErr) {
+          console.error(`Could not start refund for order ${order.id}:`, refundErr.message);
+          await pool.query('UPDATE orders SET refund_status = ? WHERE id = ?', ['failed', order.id]);
+        }
+      }
+
+      return res.json({ message: 'Event cancelled. Refunds have been started for all paid orders.' });
+    }
+
+    const [anyOrders] = await pool.query(
+      'SELECT COUNT(*) AS count FROM orders WHERE event_id = ?',
+      [req.params.id]
+    );
+    if (anyOrders[0].count > 0) {
       const [result] = await pool.query(
         'UPDATE events SET status = ? WHERE id = ? AND creator_id = ?',
         ['cancelled', req.params.id, req.user.id]
