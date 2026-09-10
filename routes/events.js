@@ -289,6 +289,33 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { title, description, event_date, start_time, end_time, venue, capacity, image_url } = req.body;
+
+    if (!title || !event_date) {
+      return res.status(400).json({ error: 'Title and date are required' });
+    }
+
+    const [result] = await pool.query(
+      `UPDATE events
+       SET title = ?, description = ?, event_date = ?, start_time = ?, end_time = ?,
+           venue = ?, capacity = ?, image_url = ?
+       WHERE id = ? AND creator_id = ?`,
+      [title, description, event_date, start_time, end_time, venue, capacity || null, image_url, req.params.id, req.user.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    res.json({ message: 'Event updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not update event' });
+  }
+});
+
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [paidOrders] = await pool.query(
