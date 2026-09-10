@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const pool = require('../config/db');
 const { sendTicketConfirmationEmail } = require('../utils/ticketEmail');
+const { getSalesCutoff } = require('../utils/salesExpiry');
 
 const router = express.Router();
 const TICKET_CODE_CHARS = 'ABCDEFGHJKLMNPQRTUVWXYZ234679';
@@ -55,6 +56,17 @@ router.post('/checkout', async (req, res) => {
     );
     if (!tickets.length) return res.status(404).json({ error: 'Ticket tier not found' });
     const ticket = tickets[0];
+
+    const [eventRowsForCutoff] = await pool.query(
+      'SELECT event_date, start_time, sales_end_date FROM events WHERE id = ?',
+      [event_id]
+    );
+    if (!eventRowsForCutoff.length) return res.status(404).json({ error: 'Event not found' });
+
+    const cutoff = getSalesCutoff(eventRowsForCutoff[0]);
+    if (new Date() >= cutoff) {
+      return res.status(409).json({ error: 'Ticket sales have closed for this event' });
+    }
 
     if (ticket.quantity !== null && ticket.quantity_sold + qty > ticket.quantity) {
       return res.status(409).json({ error: 'Not enough tickets left in this tier' });

@@ -1,6 +1,7 @@
-const express = require('express');
+ const express = require('express');
 const pool = require('../config/db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { checkTicketSalesStatus } = require('../utils/ticketSalesCheck');
 
 const router = express.Router();
 function slugify(str){
@@ -38,6 +39,8 @@ router.get('/public', async (req, res) => {
 
 router.get('/', requireAuth, async (req, res) => {
   try {
+    checkTicketSalesStatus(req.user.id).catch(e => console.error('Sales check failed:', e.message));
+
     const [rows] = await pool.query(
       'SELECT * FROM events WHERE creator_id = ? AND status != ? ORDER BY event_date ASC',
       [req.user.id, 'cancelled']
@@ -46,6 +49,22 @@ router.get('/', requireAuth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not load events' });
+  }
+});
+
+router.get('/stats/summary', requireAuth, async (req, res) => {
+  try {
+    const [[row]] = await pool.query(
+      `SELECT COALESCE(SUM(o.quantity),0) AS tickets_issued, COALESCE(SUM(o.total_amount),0) AS earnings
+       FROM orders o
+       JOIN events e ON e.id = o.event_id
+       WHERE e.creator_id = ? AND o.status = 'paid'`,
+      [req.user.id]
+    );
+    res.json(row);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load stats' });
   }
 });
 
@@ -65,6 +84,29 @@ router.get('/check-url/:slug', requireAuth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not check URL' });
+  }
+});
+
+router.put('/:id/sales-end', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { sales_end_date } = req.body;
+    if (!sales_end_date) {
+      return res.status(400).json({ error: 'Missing sales_end_date' });
+    }
+
+    const [result] = await pool.query(
+      'UPDATE events SET sales_end_date = ? WHERE id = ? AND creator_id = ?',
+      [sales_end_date, req.params.id, req.user.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    res.json({ message: 'Sales end time updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not update sales end time' });
   }
 });
 
