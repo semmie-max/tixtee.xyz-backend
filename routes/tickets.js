@@ -146,14 +146,29 @@ router.get('/my-ticket/:orderId', async (req, res) => {
     if (!token) return res.status(400).json({ error: 'Missing access token.' });
 
     const [rows] = await pool.query(
-      'SELECT ticket_code, buyer_name, status FROM orders WHERE id = ? AND access_token = ?',
+      `SELECT o.ticket_code, o.buyer_name, o.status, e.event_date, e.start_time
+       FROM orders o
+       JOIN events e ON e.id = o.event_id
+       WHERE o.id = ? AND o.access_token = ?`,
       [req.params.orderId, token]
     );
 
     if (!rows.length) return res.status(404).json({ error: 'Ticket not found.' });
-    if (rows[0].status !== 'paid') return res.status(400).json({ error: 'This order has not been paid for.' });
+    const order = rows[0];
+    if (order.status !== 'paid') return res.status(400).json({ error: 'This order has not been paid for.' });
 
-    res.json({ ticket_code: rows[0].ticket_code, holder_name: rows[0].buyer_name });
+    const eventStart = new Date(`${order.event_date.toISOString().slice(0,10)}T${order.start_time || '00:00:00'}`);
+    const unlockTime = new Date(eventStart.getTime() - 2 * 60 * 60 * 1000);
+
+    if (new Date() < unlockTime) {
+      return res.status(403).json({
+        error: "Your ticket code isn't available yet.",
+        code_locked: true,
+        unlock_time: unlockTime.toISOString()
+      });
+    }
+
+    res.json({ ticket_code: order.ticket_code, holder_name: order.buyer_name });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not load ticket.' });
