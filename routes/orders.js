@@ -206,6 +206,25 @@ router.post('/webhook', async (req, res) => {
           orderId: order.id,
           verificationLink,
         });
+
+        const [[eventOwner]] = await pool.query(
+          'SELECT creator_id FROM events WHERE id = ?',
+          [order.event_id]
+        );
+        if (eventOwner) {
+          const buyerLabel = order.buyer_name || order.buyer_email;
+          const eventTitleForNotif = eventRows[0] ? eventRows[0].title : 'your event';
+          await pool.query(
+            `INSERT INTO notifications (user_id, event_id, type, title, message)
+             VALUES (?, ?, 'ticket_sold', ?, ?)`,
+            [
+              eventOwner.creator_id,
+              order.event_id,
+              'New ticket sold',
+              `${buyerLabel} just got a new ticket for ${eventTitleForNotif}.`
+            ]
+          );
+        }
       }
     } else if (event.type === 'collection.failed') {
       await pool.query(
