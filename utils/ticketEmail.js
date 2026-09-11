@@ -1,4 +1,5 @@
 const { SendByte } = require('@sendbyte/node');
+const { buildStatusEmailHtml } = require('./statusEmailLayout');
 
 const sendbyte = new SendByte(process.env.SENDBYTE_API_KEY);
 
@@ -6,19 +7,27 @@ async function sendTicketConfirmationEmail({ toEmail, buyerName, eventTitle, tic
   const displayName = buyerName || 'there';
   const formattedPrice = `₦${Number(ticketPrice).toLocaleString('en-NG')}`;
 
+  const html = buildStatusEmailHtml({
+    preview: 'Your Tixtee ticket is confirmed',
+    bannerHeading: `Hi ${displayName}, you have a new ticket.`,
+    bannerBody: 'Your purchase went through and your ticket is ready.',
+    cardLabel: 'Confirmed',
+    cardColor: '#47034E',
+    cardHeading: 'Ticket Confirmed',
+    cardBodyHtml: `
+      Order #${orderId} was successfully placed and your payment has been processed.
+      <br><br>
+      <strong>${ticketName}</strong><br>${eventTitle}<br>${formattedPrice}
+    `,
+    ctaText: 'Get my ticket code',
+    ctaUrl: verificationLink,
+  });
+
   await sendbyte.emails.send({
     from: 'Tixtee <noreply@tixtee.xyz>',
     to: toEmail,
     subject: 'Your Tixtee ticket is confirmed',
-    html: `
-      <div style="font-family: Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; color: #434245;">
-        <h2>Hi ${displayName}, your ticket is confirmed</h2>
-        <p>Your ticket purchase (#${orderId}) was successfully placed and your payment has been processed.</p>
-        <p><strong>${ticketName}</strong><br>${eventTitle}<br>${formattedPrice}</p>
-        <p>Click the button below to get your ticket verification code.</p>
-        <a href="${verificationLink}" style="display:inline-block; background:#2e58ff; color:#fff; padding:10px 25px; border-radius:30px; text-decoration:none; font-weight:bold;">Get my ticket code</a>
-      </div>
-    `,
+    html,
   });
 }
 
