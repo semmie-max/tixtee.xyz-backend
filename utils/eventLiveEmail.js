@@ -7,6 +7,7 @@ async function sendEventLiveEmail({ toEmail, organizerName, eventTitle, eventLin
   const displayName = organizerName || 'there';
 
   const html = buildEmailHtml({
+    headerImageUrl: 'https://tixtee.xyz/images/email.png',
     preview: `${eventTitle} is now live`,
     heading: `Hi ${displayName}, your event is live`,
     bodyHtml: `<strong>${eventTitle}</strong> is now published and ready to sell tickets.`,

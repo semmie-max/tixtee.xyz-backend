@@ -8,6 +8,7 @@ async function sendTicketConfirmationEmail({ toEmail, buyerName, eventTitle, tic
   const formattedPrice = `₦${Number(ticketPrice).toLocaleString('en-NG')}`;
 
   const html = buildStatusEmailHtml({
+    headerImageUrl: 'https://tixtee.xyz/images/email-header.png',
     preview: 'Your Tixtee ticket is confirmed',
     bannerHeading: `Hi ${displayName}, you have a new ticket.`,
     bannerBody: 'Your purchase went through and your ticket is ready.',
