@@ -1,4 +1,4 @@
-function buildEmailHtml({ heading, bodyHtml, ctaText, ctaUrl, preview }) {
+function buildEmailHtml({ heading, bodyHtml, ctaText, ctaUrl, preview, headerImageUrl }) {
   return `
 <!doctype html>
 <html lang="en">
@@ -29,8 +29,15 @@ function buildEmailHtml({ heading, bodyHtml, ctaText, ctaUrl, preview }) {
       </tbody>
     </table>
 
-    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%; max-width:520px; margin:0 auto; background:#ffffff; border-radius:20px; box-shadow:0 4px 20px rgba(32,31,31,0.05);">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%; max-width:520px; margin:0 auto; background:#ffffff; border-radius:20px; overflow:hidden; box-shadow:0 4px 20px rgba(32,31,31,0.05);">
       <tbody>
+        ${headerImageUrl ? `
+        <tr>
+          <td>
+            <img src="${headerImageUrl}" alt="Tixtee" width="520" style="display:block; width:100%; height:auto;" />
+          </td>
+        </tr>
+        ` : ''}
         <tr>
           <td style="padding:36px 32px 8px; text-align:left;">
             <div style="font-family:'Inter',Helvetica,Arial,sans-serif; font-size:22px; font-weight:700; line-height:30px; color:#1a1a1a;">
@@ -69,6 +76,12 @@ function buildEmailHtml({ heading, bodyHtml, ctaText, ctaUrl, preview }) {
         <tr>
           <td style="padding:20px 25px; text-align:center;">
             <div style="font-family:'Inter',Helvetica,Arial,sans-serif; font-size:12px; font-weight:400; line-height:18px; color:#9a9a9a;">
+              Tixtee, Nigeria
+            </div>
+            <div style="font-family:'Inter',Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:20px; padding-top:6px;">
+              <a href="https://x.com/tixteexyz" style="color:#47034E; text-decoration:none;">Follow us on X</a>
+            </div>
+            <div style="font-family:'Inter',Helvetica,Arial,sans-serif; font-size:11px; font-weight:400; line-height:18px; color:#c2c2c2; padding-top:10px;">
               &copy; Tixtee.xyz, All Rights Reserved.
             </div>
           </td>
